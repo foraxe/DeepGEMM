@@ -74,8 +74,8 @@ def _copy_fp8_sf(dst: torch.Tensor, src: torch.Tensor, num_tokens: int) -> None:
 # noinspection PyUnboundLocalVariable,PyShadowingNames
 def test(local_rank: int, num_local_ranks: int, args: argparse.Namespace):
     rank_idx, num_ranks, group = init_dist(local_rank, num_local_ranks)
-    torch.manual_seed(rank_idx)
-    random.seed(rank_idx)
+    torch.manual_seed(rank_idx + args.seed_offset)
+    random.seed(rank_idx + args.seed_offset)
 
     # Settings
     is_bf16xbf16 = args.mma_type == 'bf16xbf16'
@@ -494,6 +494,8 @@ if __name__ == '__main__':
                         help='Benchmark alternating row-major/tile-packed runs')
     parser.add_argument('--ab-repeats', type=int, default=4)
     parser.add_argument('--ab-num-tests', type=int, default=20)
+    parser.add_argument('--seed-offset', type=int, default=0,
+                        help='Offset deterministic input generation')
     parser.add_argument('--dump-profile-traces', type=str, default='', help='Dump profiling trace JSONs')
     parser.add_argument('--local-rank-idx', type=int, default=None, help='Run as single process with this local rank (e.g. for NCU prof)')
     args = parser.parse_args()
