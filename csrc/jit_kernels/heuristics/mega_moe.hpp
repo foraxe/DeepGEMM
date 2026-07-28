@@ -77,12 +77,13 @@ static std::tuple<int, int, int, int, int> get_block_config_for_mega_moe(
     const int& num_ranks, const int& num_experts,
     const int& num_max_tokens_per_rank, const int& num_topk,
     const int& num_tokens,
-    const MmaKind& mma_kind) {
+    const MmaKind& mma_kind,
+    const bool tile_packed_weights = false) {
     auto [cluster_size, block_m, store_block_m, block_k, num_epilogue_warpgroups] = [&]() -> std::tuple<int, int, int, int, int> {
         float num_expected_tokens_per_expert = static_cast<float>(num_tokens) * num_ranks * num_topk / num_experts;
         if (num_expected_tokens_per_expert <= 8.5) {
             // Really small token-per-expert (e.g. RL long-tail rollout), use the smallest block_m and larger BLOCK_K for less synchronization
-            return {2, 16, 8, 256, 2};
+            return {2, 16, 8, 256, tile_packed_weights ? 1 : 2};
         } else if (num_expected_tokens_per_expert <= 16.5) {
             // Small batch size, small EP, decoding, e.g. 6/384 experts, EP8, bsz 128
             return {2, 32, 16, 128, 2};
@@ -186,11 +187,14 @@ static MegaMoEConfig get_mega_moe_config(
     const int& hidden, const int& intermediate_hidden,
     const int& num_ring_tokens,
     const int& num_sf_ring_tokens,
-    const MmaKind& mma_kind) {
+    const MmaKind& mma_kind,
+    const bool tile_packed_weights = false) {
 
     // Block config
     const auto [cluster_size, block_m, store_block_m, block_k, num_epilogue_threads] =
-        get_block_config_for_mega_moe(num_ranks, num_experts, num_max_tokens_per_rank, num_topk, num_tokens, mma_kind);
+        get_block_config_for_mega_moe(
+            num_ranks, num_experts, num_max_tokens_per_rank, num_topk,
+            num_tokens, mma_kind, tile_packed_weights);
     const int block_n = 128;
     const int load_block_m = block_m / 2;
     const int load_block_n = block_n;
