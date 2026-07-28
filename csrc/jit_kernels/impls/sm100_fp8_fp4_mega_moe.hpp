@@ -168,8 +168,8 @@ static void sm100_fp8_fp4_mega_moe(
         num_ring_tokens, num_sf_ring_tokens,
         MmaKind::MXFP8FP4, tile_packed_weights);
     if (tile_packed_weights) {
-        DG_HOST_ASSERT(config.block_n == 128);
-        DG_HOST_ASSERT(config.load_block_n == 128);
+        DG_HOST_ASSERT(config.block_n == kMegaMoEPacketBlockN);
+        DG_HOST_ASSERT(config.load_block_n == kMegaMoEPacketBlockN);
         DG_HOST_ASSERT(config.block_k == 128 or config.block_k == 256);
     }
 
@@ -336,7 +336,8 @@ static void sm100_fp8_fp4_mega_moe(
         .activation_clamp = activation_clamp,
         .fast_math = fast_math,
         .evict_first_weights =
-            tile_packed_weights and config.block_m == 16,
+            tile_packed_weights and
+            config.block_m == kMegaMoESmallTokenBlockM,
         .tile_packed_weights = tile_packed_weights,
         .config = config,
         .y = y.data_ptr(),

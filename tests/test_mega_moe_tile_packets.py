@@ -1,6 +1,17 @@
+import pytest
 import torch
 
 from deep_gemm.mega import _pack_fp4_weight_tiles
+
+
+def test_tile_packets_require_complete_cta_pairs():
+    weight = torch.empty((1, 128, 128), dtype=torch.int8)
+    sf = torch.empty((1, 128, 2), dtype=torch.int32)
+
+    with pytest.raises(
+            AssertionError,
+            match='require an even number of N tiles'):
+        _pack_fp4_weight_tiles(weight, sf)
 
 
 def test_tile_packets_keep_cluster_peers_and_scales_adjacent():

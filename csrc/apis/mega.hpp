@@ -172,7 +172,7 @@ static void fp8_fp4_mega_moe(
 ) {
     const auto [l1_weights, l1_weights_sf] = l1_weights_tuple;
     const auto [l2_weights, l2_weights_sf] = l2_weights_tuple;
-    constexpr int kWeightTileN = 128;
+    constexpr int kWeightTileN = kMegaMoEPacketBlockN;
     constexpr int kWeightTileK = 256;
     constexpr int kPackedWeightTileK = kWeightTileK / 2;
     constexpr int kPackedSFTileK = kWeightTileK / 128;

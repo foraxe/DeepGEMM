@@ -15,6 +15,11 @@
 
 namespace deep_gemm {
 
+constexpr int kMegaMoESmallTokenBlockM = 16;
+// Packet weights are physically grouped as pairs of 128-wide N tiles.
+// Keep the Python packer and host validation in sync if this changes.
+constexpr int kMegaMoEPacketBlockN = 128;
+
 struct MegaMoEConfig {
     // Block tiling
     int block_m, block_n, block_k;
@@ -83,7 +88,9 @@ static std::tuple<int, int, int, int, int> get_block_config_for_mega_moe(
         float num_expected_tokens_per_expert = static_cast<float>(num_tokens) * num_ranks * num_topk / num_experts;
         if (num_expected_tokens_per_expert <= 8.5) {
             // Really small token-per-expert (e.g. RL long-tail rollout), use the smallest block_m and larger BLOCK_K for less synchronization
-            return {2, 16, 8, 256, tile_packed_weights ? 1 : 2};
+            return {
+                2, kMegaMoESmallTokenBlockM, 8, 256,
+                tile_packed_weights ? 1 : 2};
         } else if (num_expected_tokens_per_expert <= 16.5) {
             // Small batch size, small EP, decoding, e.g. 6/384 experts, EP8, bsz 128
             return {2, 32, 16, 128, 2};
@@ -195,7 +202,7 @@ static MegaMoEConfig get_mega_moe_config(
         get_block_config_for_mega_moe(
             num_ranks, num_experts, num_max_tokens_per_rank, num_topk,
             num_tokens, mma_kind, tile_packed_weights);
-    const int block_n = 128;
+    const int block_n = kMegaMoEPacketBlockN;
     const int load_block_m = block_m / 2;
     const int load_block_n = block_n;
     const auto [sf_block_m, sf_block_n] = is_mma_with_sf(mma_kind) ?

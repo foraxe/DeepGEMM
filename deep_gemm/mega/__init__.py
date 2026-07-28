@@ -141,7 +141,8 @@ def _pack_fp4_weight_tiles(
     assert n % tile_n == 0
     assert (packed_k * 2) % tile_k == 0
     num_n_tiles = n // tile_n
-    assert num_n_tiles % 2 == 0
+    assert num_n_tiles % 2 == 0, \
+        'Cluster-paired packets require an even number of N tiles'
     num_n_clusters = num_n_tiles // 2
     num_k_tiles = packed_k * 2 // tile_k
     packed_tile_k = tile_k // 2
